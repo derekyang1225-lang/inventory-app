@@ -67,8 +67,25 @@ export default function Categories() {
   }
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm('确定要删除这个分类吗？这可能会影响关联的商品。')) return
+    if (!confirm('确定要删除这个分类吗？')) return
 
+    // 1. Check if there are products in this category
+    const { count, error: checkError } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('category_id', id)
+
+    if (checkError) {
+      alert('检查关联商品失败: ' + checkError.message)
+      return
+    }
+
+    if (count && count > 0) {
+      alert(`无法删除：该分类下还有 ${count} 个商品。请先删除或移动这些商品。`)
+      return
+    }
+
+    // 2. Delete the category if no products
     const { error } = await supabase
       .from('categories')
       .delete()
